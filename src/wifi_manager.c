@@ -15,26 +15,27 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
     }
 }
 
-void wifi_init(const char *ssid, const char *password){
-    nvs_flash_init();
-    esp_netif_init();
-    esp_event_loop_create_default();
+void wifi_init_sta(){
+    ESP_ERROR_CHECK(nvs_flash_init());
+    ESP_ERROR_CHECK(esp_netif_init());
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+
     esp_netif_create_default_wifi_sta();
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    esp_wifi_init(&cfg);
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-    wifi_config_t wifi_config = {0};
-    strcpy((char*)wifi_config.sta.ssid, ssid);
-    strcpy((char*)wifi_config.sta.password, password);
+    wifi_config_t wifi_config = {
+        .sta = {
+            .ssid = "IrrigationNetwork",
+            .password = "IrrigationPassword",
+        },
+    };
 
-    esp_wifi_set_mode(WIFI_MODE_STA);
-    esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
+    ESP_ERROR_CHECK(esp_wifi_connect());
 
-    // Register the event handler
-    esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL);
-    esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL);
-
-    esp_wifi_start();
-    ESP_LOGI(TAG, "Connecting to WiFi: %s", ssid);
+    ESP_LOGI(TAG, "Connected to Access Point: %s", wifi_config.sta.ssid);
 }
